@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Copa Mundial de la FIFA 2026</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-left">
+        <img
+          class="cover"
+          src="https://uploads.onecompiler.io/44rxxkwkm/1781161068743/Portada%20Copa%20del%20Mundo%202026.jpeg"
+          alt="Portada Copa del Mundo 2026"
+        />
+      </div>
+      <div class="hero-right">
+        <h1>Mundial 2026</h1>
+        <p>Fixture interactivo, resultados y llave eliminatoria</p>
+        <div class="tv-hero-logos">
+          <img src="https://uploads.onecompiler.io/44rxxkwkm/1781161045211/dsports.png" alt="DSports" />
+          <img src="https://uploads.onecompiler.io/44rxxkwkm/1781161063973/tyc%20sports.png" alt="TyC Sports" />
+          <img src="https://uploads.onecompiler.io/44rxxkwkm/1781161050721/telefe.png" alt="Telefe" />
+          <img src="https://uploads.onecompiler.io/44rxxkwkm/1781161029243/disney+.png" alt="Disney+" />
+          <img src="https://uploads.onecompiler.io/44rxxkwkm/1781161056773/televisi%C3%B3n%20p%C3%BAblica.png" alt="TV Pública" />
+        </div>
+        <div class="controls">
+          <button id="resetBtn">Reiniciar</button>
+          <button id="demoBtn">Cargar demo</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section>
+        <h2>Grupos</h2>
+        <div id="groupsContainer" class="grid"></div>
+      </section>
+
+      <section>
+        <h2>Calendario de partidos</h2>
+        <div id="matchesContainer" class="matches"></div>
+      </section>
+
+      <section>
+        <h2>16avos de final</h2>
+        <div id="round32Container" class="bracket"></div>
+      </section>
+
+      <section>
+        <h2>Octavos de final</h2>
+        <div id="round16Container" class="bracket"></div>
+      </section>
+
+      <section>
+        <h2>Cuartos de final</h2>
+        <div id="quartersContainer" class="bracket"></div>
+      </section>
+
+      <section>
+        <h2>Semifinal</h2>
+        <div id="semisContainer" class="bracket"></div>
+      </section>
+
+      <section>
+        <h2>Final</h2>
+        <div id="finalContainer" class="bracket"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
