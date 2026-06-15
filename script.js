@@ -88,8 +88,36 @@ const calendarioPartidos = [
   { dia: "SÁBADO 27 DE JUNIO", hora: "23:00", local: "Argelia", visita: "Austria", canal: "DSPORTS", grupo: "J" }
 ];
 
-const puntos = {};
+let puntos = {};
 let resultados = {};
+let eliminatorias = {
+  r32: [],
+  r16: [],
+  qf: [],
+  sf: [],
+  final: null
+};
+
+// Resultados de Promiedos integrados (Fecha 1)
+const resultadosPromiedos = {
+  0: { local: 2, visita: 0 },   // México vs Sudáfrica
+  1: { local: 2, visita: 1 },   // Corea del Sur vs República Checa
+  2: { local: 1, visita: 1 },   // Canadá vs Bosnia
+  3: { local: 1, visita: 1 },   // Catar vs Suiza
+  4: { local: 4, visita: 1 },   // Estados Unidos vs Paraguay
+  5: { local: 2, visita: 0 },   // Australia vs Turquía
+  6: { local: 1, visita: 1 },   // Brasil vs Marruecos
+  7: { local: 0, visita: 1 },   // Haití vs Escocia
+  8: { local: 7, visita: 1 },   // Alemania vs Curazao
+  9: { local: 1, visita: 0 },   // Costa de Marfil vs Ecuador
+  10: { local: 2, visita: 2 },  // Países Bajos vs Japón
+  11: { local: 5, visita: 1 }   // Suecia vs Túnez
+};
+
+// Cargar resultados de Promiedos
+for (let i in resultadosPromiedos) {
+  resultados[i] = resultadosPromiedos[i];
+}
 
 function initTable() {
   Object.entries(grupos).forEach(([grupo, equipos]) => {
@@ -181,24 +209,18 @@ function updatePoints() {
 }
 
 function getClasificados() {
-  return Object.keys(grupos).map(grupo => {
+  const clasificados = [];
+  for (let grupo in grupos) {
     const orden = sortTeams(grupo).map(([equipo]) => equipo);
-    return { grupo, primero: orden[0], segundo: orden[1] };
-  });
-}
-
-function renderBracket(id, title, pairs) {
-  const el = document.getElementById(id);
-  if (!pairs.length) {
-    el.innerHTML = `<div class="card placeholder">Completá resultados para generar esta fase.</div>`;
-    return;
+    clasificados.push({ grupo, primero: orden[0], segundo: orden[1] });
   }
-  el.innerHTML = `<div class="card"><h3 class="stage-title">${title}</h3>${pairs.map(p => `<div class="team"><span>${p[0]}</span><span>vs</span><span>${p[1]}</span></div>`).join("")}</div>`;
+  return clasificados;
 }
 
-function updateBrackets() {
+function generarEliminatorias() {
   const c = getClasificados();
-  const c16 = [
+  
+  eliminatorias.r32 = [
     [c[0]?.primero, c[1]?.segundo],
     [c[2]?.primero, c[3]?.segundo],
     [c[4]?.primero, c[5]?.segundo],
@@ -206,37 +228,231 @@ function updateBrackets() {
     [c[8]?.primero, c[9]?.segundo],
     [c[10]?.primero, c[11]?.segundo],
     [c[1]?.primero, c[0]?.segundo],
-    [c[3]?.primero, c[2]?.segundo]
+    [c[3]?.primero, c[2]?.segundo],
+    [c[5]?.primero, c[4]?.segundo],
+    [c[7]?.primero, c[6]?.segundo],
+    [c[9]?.primero, c[8]?.segundo],
+    [c[11]?.primero, c[10]?.segundo]
   ].filter(p => p[0] && p[1]);
+  
+  if (!window.elimResultados) {
+    window.elimResultados = {
+      r32: {},
+      r16: {},
+      qf: {},
+      sf: {},
+      final: null
+    };
+  }
+  
+  renderBracket();
+}
 
-  renderBracket("round32Container", "16avos de final", c16);
-  renderBracket("round16Container", "Octavos de final", c16.slice(0, 4));
-  renderBracket("quartersContainer", "Cuartos de final", c16.slice(0, 2));
-  renderBracket("semisContainer", "Semifinal", c16.slice(0, 1));
-  renderBracket("finalContainer", "Final", c16.length ? [[c16[0][0], c16[0][1]]] : []);
+function renderBracket() {
+  renderFase("round32Container", "16avos de final", eliminatorias.r32, "r32");
+  renderFase("round16Container", "Octavos de final", eliminatorias.r16, "r16");
+  renderFase("quartersContainer", "Cuartos de final", eliminatorias.qf, "qf");
+  renderFase("semisContainer", "Semifinal", eliminatorias.sf, "sf");
+  renderFinal();
+}
+
+function renderFase(containerId, titulo, partidos, fase) {
+  const el = document.getElementById(containerId);
+  if (!partidos || partidos.length === 0) {
+    el.innerHTML = `<div class="card placeholder">Completá resultados para generar esta fase.</div>`;
+    return;
+  }
+  
+  const resultadosFase = window.elimResultados[fase] || {};
+  
+  let html = `<div class="card"><h3 class="stage-title">${titulo}</h3>`;
+  partidos.forEach((p, idx) => {
+    const res = resultadosFase[idx] || { local: null, visita: null, ganador: null };
+    html += `
+      <div class="eliminatoria-partido" style="margin-bottom: 15px; padding: 10px; border-bottom: 1px solid #333;">
+        <div class="team" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div style="flex: 2; text-align: right;"><strong>${p[0]}</strong></div>
+          <div style="display: flex; gap: 5px; align-items: center;">
+            <input type="number" class="elim-score" data-fase="${fase}" data-partido="${idx}" data-equipo="local" value="${res.local !== null ? res.local : ''}" placeholder="0" style="width: 50px; text-align: center;">
+            <span>-</span>
+            <input type="number" class="elim-score" data-fase="${fase}" data-partido="${idx}" data-equipo="visita" value="${res.visita !== null ? res.visita : ''}" placeholder="0" style="width: 50px; text-align: center;">
+          </div>
+          <div style="flex: 2; text-align: left;"><strong>${p[1]}</strong></div>
+        </div>
+        ${res.ganador ? `<div class="ganador" style="margin-top: 5px; color: #ffd700; font-size: 12px;">✅ Ganador: ${res.ganador}</div>` : ''}
+      </div>
+    `;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+  
+  el.querySelectorAll(".elim-score").forEach(input => {
+    input.addEventListener("change", (e) => actualizarResultadoEliminatoria(e));
+  });
+}
+
+function renderFinal() {
+  const el = document.getElementById("finalContainer");
+  if (!eliminatorias.final) {
+    el.innerHTML = `<div class="card placeholder">Esperando resultados de semifinales</div>`;
+    return;
+  }
+  
+  const res = window.elimResultados.final || { local: null, visita: null, ganador: null };
+  
+  let html = `<div class="card"><h3 class="stage-title">🏆 FINAL 🏆</h3>`;
+  html += `
+    <div class="eliminatoria-partido" style="margin-bottom: 15px; padding: 10px;">
+      <div class="team" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 2; text-align: right;"><strong>${eliminatorias.final[0]}</strong></div>
+        <div style="display: flex; gap: 5px; align-items: center;">
+          <input type="number" class="elim-score-final" data-equipo="local" value="${res.local !== null ? res.local : ''}" placeholder="0" style="width: 60px; text-align: center;">
+          <span>-</span>
+          <input type="number" class="elim-score-final" data-equipo="visita" value="${res.visita !== null ? res.visita : ''}" placeholder="0" style="width: 60px; text-align: center;">
+        </div>
+        <div style="flex: 2; text-align: left;"><strong>${eliminatorias.final[1]}</strong></div>
+      </div>
+      ${res.ganador ? `<div class="ganador" style="margin-top: 10px; color: #ffd700; font-size: 16px; font-weight: bold;">🏆 CAMPEÓN: ${res.ganador} 🏆</div>` : ''}
+    </div>
+  `;
+  html += `</div>`;
+  el.innerHTML = html;
+  
+  document.querySelectorAll(".elim-score-final").forEach(input => {
+    input.addEventListener("change", (e) => actualizarResultadoFinal(e));
+  });
+}
+
+function actualizarResultadoEliminatoria(e) {
+  const fase = e.target.dataset.fase;
+  const partidoIdx = parseInt(e.target.dataset.partido);
+  const equipo = e.target.dataset.equipo;
+  const valor = e.target.value === "" ? null : parseInt(e.target.value);
+  
+  if (!window.elimResultados[fase]) window.elimResultados[fase] = {};
+  if (!window.elimResultados[fase][partidoIdx]) window.elimResultados[fase][partidoIdx] = { local: null, visita: null, ganador: null };
+  
+  window.elimResultados[fase][partidoIdx][equipo] = valor;
+  
+  const partido = window.elimResultados[fase][partidoIdx];
+  if (partido.local !== null && partido.visita !== null) {
+    if (partido.local > partido.visita) {
+      partido.ganador = eliminatorias[fase][partidoIdx][0];
+    } else if (partido.local < partido.visita) {
+      partido.ganador = eliminatorias[fase][partidoIdx][1];
+    } else {
+      partido.ganador = `${eliminatorias[fase][partidoIdx][0]} (empate)`;
+    }
+  }
+  
+  avanzarFase(fase);
+  renderBracket();
+}
+
+function actualizarResultadoFinal(e) {
+  const equipo = e.target.dataset.equipo;
+  const valor = e.target.value === "" ? null : parseInt(e.target.value);
+  
+  if (!window.elimResultados.final) window.elimResultados.final = { local: null, visita: null, ganador: null };
+  window.elimResultados.final[equipo] = valor;
+  
+  const res = window.elimResultados.final;
+  if (res.local !== null && res.visita !== null) {
+    if (res.local > res.visita) {
+      res.ganador = eliminatorias.final[0];
+    } else if (res.local < res.visita) {
+      res.ganador = eliminatorias.final[1];
+    } else {
+      res.ganador = `${eliminatorias.final[0]} (empate)`;
+    }
+  }
+  
+  renderBracket();
+}
+
+function avanzarFase(fase) {
+  if (fase === "r32" && eliminatorias.r32.length > 0) {
+    const todosCompletos = eliminatorias.r32.every((_, idx) => {
+      return window.elimResultados.r32 && window.elimResultados.r32[idx] && window.elimResultados.r32[idx].ganador;
+    });
+    if (todosCompletos && eliminatorias.r32.length > 0) {
+      const ganadores = eliminatorias.r32.map((_, idx) => window.elimResultados.r32[idx].ganador);
+      eliminatorias.r16 = [];
+      for (let i = 0; i < ganadores.length; i += 2) {
+        if (ganadores[i] && ganadores[i+1]) {
+          eliminatorias.r16.push([ganadores[i], ganadores[i+1]]);
+        }
+      }
+    }
+  }
+  
+  if (fase === "r16" && eliminatorias.r16.length > 0) {
+    const todosCompletos = eliminatorias.r16.every((_, idx) => {
+      return window.elimResultados.r16 && window.elimResultados.r16[idx] && window.elimResultados.r16[idx].ganador;
+    });
+    if (todosCompletos) {
+      const ganadores = eliminatorias.r16.map((_, idx) => window.elimResultados.r16[idx].ganador);
+      eliminatorias.qf = [];
+      for (let i = 0; i < ganadores.length; i += 2) {
+        if (ganadores[i] && ganadores[i+1]) {
+          eliminatorias.qf.push([ganadores[i], ganadores[i+1]]);
+        }
+      }
+    }
+  }
+  
+  if (fase === "qf" && eliminatorias.qf.length > 0) {
+    const todosCompletos = eliminatorias.qf.every((_, idx) => {
+      return window.elimResultados.qf && window.elimResultados.qf[idx] && window.elimResultados.qf[idx].ganador;
+    });
+    if (todosCompletos) {
+      const ganadores = eliminatorias.qf.map((_, idx) => window.elimResultados.qf[idx].ganador);
+      eliminatorias.sf = [];
+      for (let i = 0; i < ganadores.length; i += 2) {
+        if (ganadores[i] && ganadores[i+1]) {
+          eliminatorias.sf.push([ganadores[i], ganadores[i+1]]);
+        }
+      }
+    }
+  }
+  
+  if (fase === "sf" && eliminatorias.sf.length > 0) {
+    const todosCompletos = eliminatorias.sf.every((_, idx) => {
+      return window.elimResultados.sf && window.elimResultados.sf[idx] && window.elimResultados.sf[idx].ganador;
+    });
+    if (todosCompletos) {
+      const ganadores = eliminatorias.sf.map((_, idx) => window.elimResultados.sf[idx].ganador);
+      if (ganadores.length >= 2) {
+        eliminatorias.final = [ganadores[0], ganadores[1]];
+      }
+    }
+  }
+}
+
+function updateBrackets() {
+  generarEliminatorias();
 }
 
 function updateAll() {
   updatePoints();
   renderGroups();
   renderMatches();
-  updateBrackets();
+  generarEliminatorias();
 }
 
 document.getElementById("resetBtn").addEventListener("click", () => {
   resultados = {};
+  window.elimResultados = { r32: {}, r16: {}, qf: {}, sf: {}, final: null };
+  eliminatorias = { r32: [], r16: [], qf: [], sf: [], final: null };
   updateAll();
 });
 
 document.getElementById("demoBtn").addEventListener("click", () => {
-  resultados = {
-    0: { local: 2, visita: 1 },
-    1: { local: 1, visita: 3 },
-    2: { local: 0, visita: 2 },
-    3: { local: 2, visita: 0 },
-    4: { local: 1, visita: 1 },
-    5: { local: 3, visita: 1 }
-  };
+  resultados = {};
+  for (let i = 0; i < 72; i++) {
+    resultados[i] = { local: Math.floor(Math.random() * 3), visita: Math.floor(Math.random() * 3) };
+  }
+  window.elimResultados = { r32: {}, r16: {}, qf: {}, sf: {}, final: null };
   updateAll();
 });
 
